@@ -158,6 +158,16 @@ await handle.AsTask(checkInterval: 0.1f, timeout: 5f);
 
 ---
 
+## Расширения
+
+Для поддержки UniTask добавьте директиву **HAS_UNITASK**, что даст метод: 
+
+```csharp
+handle.AsUniTask().
+```
+
+---
+
 ## MIT Лицензия
 
 Используйте свободно в своих проектах 🙂

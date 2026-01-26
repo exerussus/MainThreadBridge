@@ -1,6 +1,5 @@
 ﻿using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
-using Cysharp.Threading.Tasks;
 
 namespace Exerussus.MainThreadBridgeFeature
 {
@@ -50,21 +49,6 @@ namespace Exerussus.MainThreadBridgeFeature
                     if (timeoutMilliseconds <= 0) return;
 
                     await Task.Delay(millisecondsDelay);
-                    timeoutMilliseconds -= millisecondsDelay;
-                }
-            }
-
-            public async UniTask AsUniTask(float checkInterval = 0.1f, float timeout = 0)
-            {
-                var id = Id;
-                var millisecondsDelay = (int)(checkInterval * 1000);
-                var timeoutMilliseconds = timeout <= 0 ? int.MaxValue : (int)(timeout * 1000);
-
-                while (!MainThreadBridge.IsDone(id))
-                {
-                    if (timeoutMilliseconds <= 0) return;
-
-                    await UniTask.Delay(millisecondsDelay);
                     timeoutMilliseconds -= millisecondsDelay;
                 }
             }
