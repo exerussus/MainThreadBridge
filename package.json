@@ -1,0 +1,21 @@
+{
+  "name": "Exerussus.MainThreadBridge",
+  "version": "1.0.0",
+  "displayName": "MainThreadBridge",
+  "description": "Unity утилита для выполнения кода в главном потоке.",
+  "unity": "2020.3",
+  "dependencies": {},
+  "keywords": [
+    "exerussus",
+    "threads",
+    "main-thread"
+  ],
+  "author": {
+    "name": "Exerussus",
+    "email": "solovyov.production@gmail.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/exerussus/MainThreadBridge.git"
+  }
+}
