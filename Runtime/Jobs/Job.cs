@@ -9,20 +9,13 @@ namespace Exerussus.MainThreadBridgeFeature
         private static readonly Dictionary<int, IJob> ToCreate = new();
         private static readonly Dictionary<int, IJob> ToWait = new();
         private static readonly ConcurrentQueue<Job> Jobs = new();
-        private static readonly ConcurrentDictionary<Type, object> GenericJobs = new();
         private static readonly object JobsLock = new();
-        
-        private static ConcurrentQueue<Job<T>> GetGenericPool<T>()
+
+        private static class JobPool<T>
         {
-            var type = typeof(T);
-            return (ConcurrentQueue<Job<T>>)GenericJobs.GetOrAdd(type, _ => new ConcurrentQueue<Job<T>>());
+            public static readonly ConcurrentQueue<Job<T>> Queue = new();
         }
-        
-        private static void Release<T>(Job<T> job)
-        {
-            if (GenericJobs.TryGetValue(typeof(T), out var obj) && obj is ConcurrentQueue<Job<T>> pool) pool.Enqueue(job);
-        }
-        
+
         internal interface IJob
         {
             public int Id { get; set; }
@@ -31,7 +24,7 @@ namespace Exerussus.MainThreadBridgeFeature
             public void Invoke();
             public void Release();
         }
-        
+
         internal class Job : IJob
         {
             private Job() { }
@@ -56,19 +49,18 @@ namespace Exerussus.MainThreadBridgeFeature
                 Id = 0;
                 EndTime = 0;
                 IsProtected = false;
+                _action = null;
                 Jobs.Enqueue(this);
             }
         }
-        
+
         internal class Job<T> : IJob
         {
             private Job() { }
 
             public static Job<T> Create(int id, T context, Action<T> action)
             {
-                var pool = GetGenericPool<T>();
-                
-                if (!pool.TryDequeue(out var job)) job = new();
+                if (!JobPool<T>.Queue.TryDequeue(out var job)) job = new();
                 job.Id = id;
                 job._action = action;
                 job.Context = context;
@@ -89,7 +81,8 @@ namespace Exerussus.MainThreadBridgeFeature
                 EndTime = 0;
                 IsProtected = false;
                 Context = default;
-                Release<T>(this);
+                _action = null;
+                JobPool<T>.Queue.Enqueue(this);
             }
         }
     }
