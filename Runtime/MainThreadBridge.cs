@@ -1,5 +1,4 @@
-﻿
-using System;
+﻿using System;
 using System.Threading;
 using UnityEngine;
 
@@ -21,11 +20,11 @@ namespace Exerussus.MainThreadBridgeFeature
             LoopHelper.OnUpdate += Update;
         }
 
-        public static Builder CreateJob(Action action)
+        public static Builder Create()
         {
-            return Builder.Create(action);
+            return Builder.Create();
         }
-
+        
         private static void Update()
         {
             Time = UnityEngine.Time.time;

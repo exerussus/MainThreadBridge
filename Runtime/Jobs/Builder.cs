@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
+using UnityEngine;
 
 namespace Exerussus.MainThreadBridgeFeature
 {
@@ -17,7 +18,7 @@ namespace Exerussus.MainThreadBridgeFeature
                 _id = id;
             }
 
-            public static Builder Create(Action action)
+            public static Builder Create()
             {
                 int id = 0;
 
@@ -26,7 +27,7 @@ namespace Exerussus.MainThreadBridgeFeature
                     id = _freeBuilderIndex++;
                 }
 
-                Buffer.Create(id, action);
+                Buffer.Create(id);
                 return new Builder(id);
             }
 
@@ -46,12 +47,12 @@ namespace Exerussus.MainThreadBridgeFeature
                 return this;
             }
 
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public Builder Preserve()
-            {
-                SetPreserve(_id);
-                return this;
-            }
+            // [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            // public Builder Preserve(Action action)
+            // {
+            //     SetPreserve(_id);
+            //     return this;
+            // }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public Builder Break()
@@ -60,7 +61,18 @@ namespace Exerussus.MainThreadBridgeFeature
                 return this;
             }
 
-            public Handle Run()
+            // public Handle Run()
+            // {
+            //     if (!GetIsValid(_id)) return default;
+            //     if (!IsPreserved(_id))
+            //     {
+            //         Debug.LogError($"Only preserved can run without action.");
+            //         return default;
+            //     }
+            //     
+            // }
+
+            public Handle Run(Action action)
             {
                 if (!GetIsValid(_id)) return default;
 
@@ -72,7 +84,24 @@ namespace Exerussus.MainThreadBridgeFeature
 
                 var handle = new Handle(jobId);
 
-                BakeJob(_id, jobId);
+                BakeJob(_id, jobId, action);
+
+                return handle;
+            }
+
+            public Handle Run<T>(T context, Action<T> action)
+            {
+                if (!GetIsValid(_id)) return default;
+
+                int jobId;
+                lock (JobIndexLock)
+                {
+                    jobId = _freeJobIndex++;
+                }
+
+                var handle = new Handle(jobId);
+
+                BakeJob<T>(_id, jobId, context, action);
 
                 return handle;
             }

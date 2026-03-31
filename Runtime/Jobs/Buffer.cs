@@ -37,6 +37,15 @@ namespace Exerussus.MainThreadBridgeFeature
             }
         }
 
+        private static bool IsPreserved(int builderId)
+        {
+            lock (ActiveBuffersLock)
+            {
+                if (!ActiveBuffers.TryGetValue(builderId, out var buffer)) return false;
+                return buffer.IsPreserved;
+            }
+        }
+
         private static bool GetIsValid(int builderId)
         {
             lock (ActiveBuffersLock)
@@ -45,25 +54,40 @@ namespace Exerussus.MainThreadBridgeFeature
             }
         }
 
-        private static void BakeJob(int builderId, int jobId)
+        private static void BakeJob(int builderId, int jobId, Action action)
         {
             Buffer buffer;
 
             lock (ActiveBuffersLock)
             {
                 if (!ActiveBuffers.TryGetValue(builderId, out buffer)) return;
-
-                CreateJob(buffer, jobId);
+                
+                CreateJob(buffer, jobId, action);
 
                 if (buffer.IsPreserved) return;
 
                 ActiveBuffers.Remove(builderId);
             }
 
-            buffer.Delay = 0;
-            buffer.IsPreserved = false;
-            buffer.Action = null;
-            Buffers.Enqueue(buffer);
+            buffer.Release();
+        }
+
+        private static void BakeJob<T>(int builderId, int jobId, T context, Action<T> action)
+        {
+            Buffer buffer;
+
+            lock (ActiveBuffersLock)
+            {
+                if (!ActiveBuffers.TryGetValue(builderId, out buffer)) return;
+                
+                CreateJob(buffer, jobId, context, action);
+
+                if (buffer.IsPreserved) return;
+
+                ActiveBuffers.Remove(builderId);
+            }
+
+            buffer.Release();
         }
 
         private static void Break(int builderId)
@@ -75,32 +99,36 @@ namespace Exerussus.MainThreadBridgeFeature
                 if (!ActiveBuffers.Remove(builderId, out buffer)) return;
             }
 
-            buffer.Delay = 0;
-            buffer.IsPreserved = false;
-            buffer.Action = null;
-            Buffers.Enqueue(buffer);
+            buffer.Release();
         }
-
-        public class Buffer
+        
+        internal class Buffer
         {
             private Buffer()
             {
             }
 
-            public static void Create(int id, Action action)
+            public static void Create(int id)
             {
                 lock (ActiveBuffersLock)
                 {
                     if (!Buffers.TryDequeue(out var buffer)) buffer = new Buffer();
                     ActiveBuffers[id] = buffer;
-                    buffer.Action = action;
                 }
             }
             
-            public float Delay;
-            public bool IsProtected;
-            public bool IsPreserved;
-            public Action Action;
+            public int Id { get; set; }
+            public float Delay { get; set; }
+            public bool IsProtected { get; set; }
+            public bool IsPreserved { get; set; }
+
+            public void Release()
+            {
+                Id = 0;
+                Delay = 0;
+                IsPreserved = false;
+                Buffers.Enqueue(this);
+            }
         }
     }
 }

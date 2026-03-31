@@ -55,20 +55,20 @@ namespace Exerussus.MainThreadBridgeFeature
                 {
                     var job = ToWait[jobId];
                     ToWait.Remove(jobId);
-                    Job.Release(job);
+                    job.Release();
                 }
 
                 ToRelease.Clear();
             }
         }
 
-        internal static void ExecuteJob(Job job)
+        internal static void ExecuteJob(IJob job)
         {
             if (job.IsProtected)
             {
                 try
                 {
-                    job.Action.Invoke();
+                    job.Invoke();
                 }
                 catch (Exception e)
                 {
@@ -77,15 +77,22 @@ namespace Exerussus.MainThreadBridgeFeature
             }
             else
             {
-                job.Action.Invoke();
+                job.Invoke();
             }
         }
 
-        internal static void CreateJob(Buffer buffer, int jobId)
+        internal static void CreateJob(Buffer buffer, int jobId, Action action)
         {
-            var job = Job.Create(jobId);
+            IJob job = Job.Create(jobId, action);
             job.EndTime = Time + buffer.Delay;
-            job.Action = buffer.Action;
+            job.IsProtected = buffer.IsProtected;
+            lock (CreateLock) ToCreate.Add(job.Id, job);
+        }
+
+        internal static void CreateJob<T>(Buffer buffer, int jobId, T context, Action<T> action)
+        {
+            IJob job = Job<T>.Create(jobId, context, action);
+            job.EndTime = Time + buffer.Delay;
             job.IsProtected = buffer.IsProtected;
             lock (CreateLock) ToCreate.Add(job.Id, job);
         }
