@@ -9,31 +9,18 @@ namespace Exerussus.MainThreadBridgeFeature
         private static readonly Dictionary<int, IJob> ToCreate = new();
         private static readonly Dictionary<int, IJob> ToWait = new();
         private static readonly ConcurrentQueue<Job> Jobs = new();
-        private static readonly Dictionary<Type, object> GenericJobs = new();
+        private static readonly ConcurrentDictionary<Type, object> GenericJobs = new();
         private static readonly object JobsLock = new();
         
         private static ConcurrentQueue<Job<T>> GetGenericPool<T>()
         {
-            ConcurrentQueue<Job<T>> pool;
-                
             var type = typeof(T);
-            if (!GenericJobs.TryGetValue(type, out var concurrentQueue))
-            {
-                pool = new ConcurrentQueue<Job<T>>();
-                GenericJobs[type] = pool;
-            }
-            else
-            {
-                pool = concurrentQueue as ConcurrentQueue<Job<T>>;
-            }
-
-            return pool;
+            return (ConcurrentQueue<Job<T>>)GenericJobs.GetOrAdd(type, _ => new ConcurrentQueue<Job<T>>());
         }
         
         private static void Release<T>(Job<T> job)
         {
-            var pool = GenericJobs[typeof(T)] as ConcurrentQueue<Job<T>>;
-            pool?.Enqueue(job);
+            if (GenericJobs.TryGetValue(typeof(T), out var obj) && obj is ConcurrentQueue<Job<T>> pool) pool.Enqueue(job);
         }
         
         internal interface IJob

@@ -113,6 +113,7 @@ namespace Exerussus.MainThreadBridgeFeature
                 lock (ActiveBuffersLock)
                 {
                     if (!Buffers.TryDequeue(out var buffer)) buffer = new Buffer();
+                    buffer.Id = id;
                     ActiveBuffers[id] = buffer;
                 }
             }
@@ -126,6 +127,7 @@ namespace Exerussus.MainThreadBridgeFeature
             {
                 Id = 0;
                 Delay = 0;
+                IsProtected = false;
                 IsPreserved = false;
                 Buffers.Enqueue(this);
             }

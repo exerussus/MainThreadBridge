@@ -1,6 +1,6 @@
 {
   "name": "com.exerussus.mainthreadbridge",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "displayName": "MainThreadBridge",
   "description": "Unity утилита для выполнения кода в главном потоке.",
   "unity": "2020.3",

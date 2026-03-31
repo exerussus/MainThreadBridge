@@ -7,7 +7,6 @@ namespace Exerussus.MainThreadBridgeFeature
     public static partial class MainThreadBridge
     {
         private static readonly HashSet<int> ToRelease = new();
-        private static readonly object CreateLock = new();
 
         internal static void UpdateActionBuilding()
         {
@@ -53,8 +52,10 @@ namespace Exerussus.MainThreadBridgeFeature
             {
                 foreach (var jobId in ToRelease)
                 {
-                    var job = ToWait[jobId];
-                    ToWait.Remove(jobId);
+                    IJob job;
+                    if (ToWait.TryGetValue(jobId, out job)) ToWait.Remove(jobId);
+                    else if (ToCreate.TryGetValue(jobId, out job)) ToCreate.Remove(jobId);
+                    else continue;
                     job.Release();
                 }
 
@@ -86,7 +87,7 @@ namespace Exerussus.MainThreadBridgeFeature
             IJob job = Job.Create(jobId, action);
             job.EndTime = Time + buffer.Delay;
             job.IsProtected = buffer.IsProtected;
-            lock (CreateLock) ToCreate.Add(job.Id, job);
+            lock (JobsLock) ToCreate.Add(job.Id, job);
         }
 
         internal static void CreateJob<T>(Buffer buffer, int jobId, T context, Action<T> action)
@@ -94,7 +95,7 @@ namespace Exerussus.MainThreadBridgeFeature
             IJob job = Job<T>.Create(jobId, context, action);
             job.EndTime = Time + buffer.Delay;
             job.IsProtected = buffer.IsProtected;
-            lock (CreateLock) ToCreate.Add(job.Id, job);
+            lock (JobsLock) ToCreate.Add(job.Id, job);
         }
 
         internal static bool TryCancel(int jobId)
